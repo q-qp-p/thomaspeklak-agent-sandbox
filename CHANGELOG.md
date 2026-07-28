@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.14.2] — 2026-07-28
+
+### Bug Fixes
+
+- Make sandbox image updates failsafe (#11) (e1e2857)
+
 ## [v0.14.1] — 2026-07-08
 
 ### Bug Fixes
