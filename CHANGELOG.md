@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.16.0] — 2026-07-29
+
+### Chores / Other
+
+- build(container): refresh Fedora 44 toolchain (e698300)
+- build(container): upgrade Fedora to 44 (96314b3)
+
 ## [v0.15.0] — 2026-07-29
 
 ### Features
