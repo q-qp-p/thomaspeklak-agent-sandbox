@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.15.0] — 2026-07-29
+
+### Features
+
+- Add host command secret source (#12) (5134000)
+- feat: add searchable documentation site (dbdc964)
+- Build agent sandbox Pages showcase (4541a72)
+
 ## [v0.14.2] — 2026-07-28
 
 ### Bug Fixes
