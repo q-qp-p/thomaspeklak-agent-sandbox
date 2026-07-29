@@ -41,9 +41,8 @@ RUN dnf -y install \
       kitty-terminfo \
       less \
       make \
-      nodejs \
-      npm \
-      pnpm \
+      nodejs24-bin \
+      nodejs24-npm-bin \
       openssh-clients \
       patch \
       pkgconf-pkg-config \
@@ -71,6 +70,8 @@ RUN useradd -m -u 1000 -s /bin/bash dev && \
     printf 'ignore-scripts=true\n' > /etc/npmrc && \
     printf 'ignore-scripts=true\n' > /home/dev/.npmrc && \
     printf 'ignore-scripts=true\nstore-dir=/usr/local/pnpm/.store\nglobal-bin-dir=/usr/local/pnpm\n' > /home/dev/.config/pnpm/rc && \
+    npm install --global --prefix /usr/local --ignore-scripts pnpm@latest && \
+    /usr/local/bin/pnpm --version && \
     chown -R dev:dev /workspace /home/dev /usr/local/pnpm /opt/claude-home
 
 COPY --chown=dev:dev tmux.conf /home/dev/.tmux.conf
@@ -192,7 +193,7 @@ COPY --from=glimpse-builder /out/glimpse-shim /opt/ags/glimpse-shim
 # Extended tooling layer: project-specific and heavier dev dependencies.
 # Keep this near the end so package list tweaks rebuild quickly.
 # Override with: --build-arg EXTRA_DNF_PACKAGES="..."
-ARG EXTRA_DNF_PACKAGES="golang ImageMagick java-21-openjdk-devel postgresql python3-pip ruby sqlite-devel zig"
+ARG EXTRA_DNF_PACKAGES="golang ImageMagick java-devel postgresql python3-pip ruby sqlite-devel zig"
 RUN if [ -n "$EXTRA_DNF_PACKAGES" ]; then \
       dnf -y install $EXTRA_DNF_PACKAGES; \
     fi && \

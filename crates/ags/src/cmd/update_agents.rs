@@ -130,7 +130,7 @@ fn build_install_script(pi_spec: &str, release_age: u32) -> String {
     let legacy_pi_cleanup = legacy_pi_cleanup_script();
 
     // Always use the pnpm packaged in the sandbox image. `pnpm self-update` writes
-    // pnpm's own shims into PNPM_HOME; those shims can shadow `/usr/bin/pnpm`
+    // pnpm's own shims into PNPM_HOME; those shims can shadow `/usr/local/bin/pnpm`
     // and drift to a different store layout than the global agent installs.
     format!(
         r#"set -e && \
@@ -140,7 +140,7 @@ export PNPM_HOME=/usr/local/pnpm NPM_CONFIG_STORE_DIR=/usr/local/pnpm/.store NPM
 rm -f /usr/local/pnpm/pnpm /usr/local/pnpm/pn /usr/local/pnpm/pnpx /usr/local/pnpm/pnx /usr/local/pnpm/bin/pnpm /usr/local/pnpm/bin/pn /usr/local/pnpm/bin/pnpx /usr/local/pnpm/bin/pnx && \
 rm -f /home/dev/.npm-global/bin/pi /home/dev/.npm-global/bin/codex /home/dev/.npm-global/bin/gemini /home/dev/.npm-global/bin/opencode && \
 rm -rf /home/dev/.npm-global/lib/node_modules/@mariozechner/pi-coding-agent /home/dev/.npm-global/lib/node_modules/@earendil-works/pi-coding-agent /home/dev/.npm-global/lib/node_modules/@openai/codex /home/dev/.npm-global/lib/node_modules/@google/gemini-cli /home/dev/.npm-global/lib/node_modules/opencode-ai && \
-PNPM_BIN=/usr/bin/pnpm && \
+PNPM_BIN=/usr/local/bin/pnpm && \
 [ -x "$PNPM_BIN" ] && \
 install_pnpm_agent() {{ \
   name="$1"; shift; \
@@ -230,7 +230,7 @@ mod tests {
         assert!(script.contains("install_pnpm_agent gemini @google/gemini-cli"));
         assert!(script.contains("install_pnpm_agent opencode opencode-ai"));
         assert!(script.contains("\"$PNPM_BIN\" add -g \"$@\" || return"));
-        assert!(script.contains("PNPM_BIN=/usr/bin/pnpm"));
+        assert!(script.contains("PNPM_BIN=/usr/local/bin/pnpm"));
         assert!(
             !script.contains("using existing installs"),
             "pnpm update failures must not be masked by an existing stale pi binary"
