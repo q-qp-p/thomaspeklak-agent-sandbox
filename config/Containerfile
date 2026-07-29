@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora:43 AS glimpse-builder
+FROM registry.fedoraproject.org/fedora:44 AS glimpse-builder
 
 RUN dnf -y install \
       ca-certificates \
@@ -19,7 +19,7 @@ RUN cd /src/glimpse-shim && \
     /tmp/cargo/bin/cargo build --release && \
     install -D -m 0755 target/release/glimpse-shim /out/glimpse-shim
 
-FROM registry.fedoraproject.org/fedora:43
+FROM registry.fedoraproject.org/fedora:44
 
 # Stable base layer: core tools used in nearly every sandbox run.
 RUN dnf -y install \
