@@ -68,6 +68,11 @@ mode = "rw"
 kind = "dir"
 create = true
 
+# Ordered alternatives for the same target; each source uses its own block.
+[[tool.secret]]
+env = "EXAMPLE_TOOL_TOKEN"
+command = ["$HOME/.local/bin/example-credential-adapter", "lookup", "--service", "example-service"]
+
 [[tool.secret]]
 env = "EXAMPLE_TOOL_TOKEN"
 from_env = "EXAMPLE_TOOL_TOKEN"
@@ -76,7 +81,11 @@ from_env = "EXAMPLE_TOOL_TOKEN"
 env = "EXAMPLE_TOOL_TOKEN"
 secret_store = { service = "example-service", username = "example-user" }
 
-# Generic secret example
+# Generic secret example with ordered alternative sources.
+[[secret]]
+env = "EXAMPLE_GH_TOKEN"
+command = ["$HOME/.local/bin/example-credential-adapter", "lookup", "--service", "example-gh-service"]
+
 [[secret]]
 env = "EXAMPLE_GH_TOKEN"
 from_env = "EXAMPLE_GH_TOKEN"
@@ -84,6 +93,9 @@ from_env = "EXAMPLE_GH_TOKEN"
 [[secret]]
 env = "EXAMPLE_GH_TOKEN"
 secret_store = { service = "example-gh-service", account = "example-account" }
+
+# Command secret sources execute trusted host code and are allowed only in the
+# user/global config. Repo-local .ags/config.toml overlays cannot define them.
 
 # Optional dcg user config/state mounts.
 # Project-local .dcg.toml is picked up automatically from the workspace mount.
