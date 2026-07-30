@@ -28,6 +28,8 @@ const PNPM_GLOBAL_BIN_DIR: &str = "/usr/local/pnpm";
 const HOST_SERVICES_HOST: &str = "host.containers.internal";
 const HOST_SERVICES_HINT: &str =
     "[ags] Host services: use host.containers.internal (localhost is container-local)";
+/// The only container destination accepted for the AGS-owned bootstrap asset.
+pub const ONEPASSWORD_BOOTSTRAP_CONTAINER_PATH: &str = "/run/ags/onepassword-bootstrap";
 
 pub struct BuildLaunchPlanOptions<'a> {
     pub browser_mode: bool,
@@ -49,6 +51,12 @@ pub struct BuildLaunchPlanOptions<'a> {
     pub stop_when_done: bool,
     pub root_mode: bool,
     pub wayland_passthrough: bool,
+    /// Anonymous item FDs prepared for the final-process bootstrap.
+    pub payload_fd_count: usize,
+    /// Container path of the mounted bootstrap. Must be present with payload FDs.
+    pub bootstrap_path: Option<&'a str>,
+    /// Exact host path of the private, per-run bootstrap asset.
+    pub bootstrap_host_path: Option<&'a Path>,
 }
 
 /// Intermediate env-assembly context. Sidecar fields mirror
@@ -112,7 +120,24 @@ pub fn build_launch_plan(
         stop_when_done,
         root_mode,
         wayland_passthrough,
+        payload_fd_count,
+        bootstrap_path,
+        bootstrap_host_path,
     } = options;
+    if payload_fd_count > 0 && bootstrap_path != Some(ONEPASSWORD_BOOTSTRAP_CONTAINER_PATH) {
+        return Err(PlanError::PayloadBootstrapInvalid);
+    }
+    if payload_fd_count > 0 && bootstrap_host_path.is_none() {
+        return Err(PlanError::PayloadBootstrapMissing);
+    }
+    if payload_fd_count == 0 && (bootstrap_path.is_some() || bootstrap_host_path.is_some()) {
+        return Err(PlanError::PayloadBootstrapUnexpected);
+    }
+    if let Some(path) = bootstrap_host_path
+        && !path.is_file()
+    {
+        return Err(PlanError::PayloadBootstrapHostMissing(path.to_owned()));
+    }
     let effective_browser_mode = browser_mode && !lockdown;
     let auth_proxy_runtime_dir = auth_proxy_runtime_dir.filter(|_| !lockdown);
     let clipboard_runtime_dir = clipboard_runtime_dir.filter(|_| !lockdown);
@@ -275,6 +300,17 @@ pub fn build_launch_plan(
         add_pub_key_mount(&mut mounts, &config.sandbox.sign_key, "ags-agent-signing");
     }
 
+    // Render the trusted bootstrap after every user- or runtime-controlled
+    // mount. The final, exact bind wins even when an earlier destination reaches
+    // `/run` through an image symlink such as `/var/run`.
+    if let Some(host) = bootstrap_host_path {
+        mounts.push(PlanMount {
+            host: host.to_owned(),
+            container: ONEPASSWORD_BOOTSTRAP_CONTAINER_PATH.to_owned(),
+            mode: MountMode::Ro,
+        });
+    }
+
     // Environment
     let env = build_env(
         config,
@@ -315,6 +351,8 @@ pub fn build_launch_plan(
         webview_relay_enabled: webview_relay_runtime_dir.is_some(),
         show_host_services_hint: !lockdown,
         stop_when_done,
+        payload_fd_count,
+        bootstrap_path,
     });
 
     Ok(LaunchPlan {
@@ -334,6 +372,8 @@ pub fn build_launch_plan(
         network_mode,
         boot_dirs: config.sandbox.container_boot_dirs.clone(),
         entrypoint,
+        payload_fd_count,
+        bootstrap_path: bootstrap_path.map(str::to_owned),
     })
 }
 
