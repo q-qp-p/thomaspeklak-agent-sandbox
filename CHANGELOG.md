@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.17.0] — 2026-07-30
+
+### Features
+
+- feat: inject 1Password Secure Note environment sets (#15) (45e4c35)
+
+### Chores / Other
+
+- plan 1Password secret set injection (8f778f1)
+
 ## [v0.16.0] — 2026-07-29
 
 ### Chores / Other
