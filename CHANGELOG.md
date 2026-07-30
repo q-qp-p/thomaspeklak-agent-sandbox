@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.17.1] — 2026-07-30
+
+### Bug Fixes
+
+- fix: compile 1Password payload support on macOS (f5a3ccb)
+
 ## [v0.17.0] — 2026-07-30
 
 ### Features
