@@ -6,7 +6,9 @@
 
 use std::fmt;
 use std::fs::File;
-use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
+#[cfg(target_os = "linux")]
+use std::os::fd::FromRawFd;
+use std::os::fd::{AsRawFd, OwnedFd};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 
@@ -254,6 +256,7 @@ fn prepare_one(source: SourceRef, op_path: &Path) -> Result<PreparedItem, OnePas
     Ok(PreparedItem { source, fd })
 }
 
+#[cfg(target_os = "linux")]
 fn create_memfd() -> std::io::Result<OwnedFd> {
     let name = c"ags-op-item";
     let fd =
@@ -264,6 +267,15 @@ fn create_memfd() -> std::io::Result<OwnedFd> {
     Ok(unsafe { OwnedFd::from_raw_fd(fd) })
 }
 
+#[cfg(not(target_os = "linux"))]
+fn create_memfd() -> std::io::Result<OwnedFd> {
+    Err(std::io::Error::new(
+        std::io::ErrorKind::Unsupported,
+        "sealed memfd payloads require Linux",
+    ))
+}
+
+#[cfg(target_os = "linux")]
 fn validate_rewind_and_seal(fd: &OwnedFd, source: &SourceRef) -> Result<(), OnePasswordError> {
     let mut stat = unsafe { std::mem::zeroed::<libc::stat>() };
     if unsafe { libc::fstat(fd.as_raw_fd(), &mut stat) } != 0 {
@@ -298,6 +310,14 @@ fn validate_rewind_and_seal(fd: &OwnedFd, source: &SourceRef) -> Result<(), OneP
     Ok(())
 }
 
-#[cfg(test)]
+#[cfg(not(target_os = "linux"))]
+fn validate_rewind_and_seal(_: &OwnedFd, source: &SourceRef) -> Result<(), OnePasswordError> {
+    Err(OnePasswordError::Seal {
+        source: source.clone(),
+        kind: std::io::ErrorKind::Unsupported,
+    })
+}
+
+#[cfg(all(test, target_os = "linux"))]
 #[path = "onepassword_tests.rs"]
 mod tests;
