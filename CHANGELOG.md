@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.18.0] — 2026-08-12
+
+### Features
+
+- feat: add per-run container environment flags (67c5815)
+
 ## [v0.17.1] — 2026-07-30
 
 ### Bug Fixes
