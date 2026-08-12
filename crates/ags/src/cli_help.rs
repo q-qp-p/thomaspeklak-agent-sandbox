@@ -51,6 +51,8 @@ Run flags:
 \
   --add-dir, -d <path> Add an extra host directory mount (repeatable)
 \
+  --env <NAME=VALUE>   Set a container environment variable (repeatable)
+\
   --op-secret-set, -1 <vault/item>
 \
                        Inject fields from a 1Password Secure Note (repeatable; CLI-only)

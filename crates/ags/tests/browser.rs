@@ -4,6 +4,14 @@ use std::path::PathBuf;
 use ags::browser;
 use ags::config::BrowserConfig;
 
+fn unused_port() -> u16 {
+    TcpListener::bind("127.0.0.1:0")
+        .unwrap()
+        .local_addr()
+        .unwrap()
+        .port()
+}
+
 fn make_config(enabled: bool, port: u16) -> BrowserConfig {
     BrowserConfig {
         enabled,
@@ -42,7 +50,7 @@ fn start_fails_when_command_empty() {
 
 #[test]
 fn start_fails_when_command_not_found() {
-    let mut config = make_config(true, 9222);
+    let mut config = make_config(true, unused_port());
     config.command = "ags-nonexistent-browser-command-xyz".to_owned();
     let result = browser::start_if_needed(true, &config);
     assert!(result.is_err());
@@ -52,7 +60,7 @@ fn start_fails_when_command_not_found() {
 
 #[test]
 fn start_fails_when_absolute_command_not_executable() {
-    let mut config = make_config(true, 9222);
+    let mut config = make_config(true, unused_port());
     config.command = "/nonexistent/path/to/browser".to_owned();
     let result = browser::start_if_needed(true, &config);
     assert!(result.is_err());

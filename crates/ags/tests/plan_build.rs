@@ -64,6 +64,7 @@ fn default_options(secrets: &HashMap<String, String>) -> BuildLaunchPlanOptions<
         psp_session_id: None,
         extra_mounts: &[],
         extra_mount_dirs: &[],
+        env: &[],
         stop_when_done: false,
         root_mode: false,
         wayland_passthrough: false,
@@ -367,6 +368,46 @@ fn env_has_required_inline_vars() {
     );
     assert!(find_plan_env(&plan, "PNPM_HOME").is_some());
     assert!(find_plan_env(&plan, "CARGO_HOME").is_some());
+}
+
+#[test]
+fn runtime_env_is_set_and_last_value_overrides_managed_defaults() {
+    let toml = minimal_config_toml();
+    let workdir = tempfile::tempdir().unwrap();
+    let config = parse_toml_str(&toml, Path::new("/test/config.toml")).unwrap();
+    let secrets = HashMap::new();
+    let env = vec![
+        ("BROWSER_URL".to_owned(), "http://127.0.0.1:9222".to_owned()),
+        ("HOME".to_owned(), "/first".to_owned()),
+        ("HOME".to_owned(), "/custom-home".to_owned()),
+    ];
+    let plan = build_launch_plan(
+        &config,
+        workdir.path(),
+        Agent::Pi,
+        BuildLaunchPlanOptions {
+            env: &env,
+            ..default_options(&secrets)
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        find_plan_env(&plan, "BROWSER_URL"),
+        Some("http://127.0.0.1:9222".to_owned())
+    );
+    assert_eq!(
+        find_plan_env(&plan, "HOME"),
+        Some("/custom-home".to_owned())
+    );
+    assert_eq!(
+        plan.env
+            .inline
+            .iter()
+            .filter(|(key, _)| key == "HOME")
+            .count(),
+        1
+    );
 }
 
 #[test]

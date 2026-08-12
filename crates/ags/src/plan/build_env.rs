@@ -16,6 +16,7 @@ fn build_env(
         webview_relay_runtime_dir,
         psp_socket,
         psp_session_id,
+        env,
         guard_enabled,
         lockdown,
     } = ctx;
@@ -141,6 +142,16 @@ fn build_env(
         ));
         if let Some(session_id) = psp_session_id {
             inline.push(("PSP_SESSION_ID".to_owned(), session_id.to_owned()));
+        }
+    }
+
+    // Explicit per-run values have final precedence over AGS-managed defaults.
+    // Repeated --env names are applied in CLI order, so the last value wins.
+    for (name, value) in env {
+        if let Some((_, existing_value)) = inline.iter_mut().find(|(key, _)| key == name) {
+            existing_value.clone_from(value);
+        } else {
+            inline.push((name.clone(), value.clone()));
         }
     }
 

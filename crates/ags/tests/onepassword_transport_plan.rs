@@ -86,6 +86,7 @@ fn options(secrets: &HashMap<String, String>) -> BuildLaunchPlanOptions<'_> {
         psp_session_id: None,
         extra_mounts: &[],
         extra_mount_dirs: &[],
+        env: &[],
         stop_when_done: false,
         root_mode: false,
         wayland_passthrough: false,

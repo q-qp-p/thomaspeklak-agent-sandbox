@@ -411,6 +411,7 @@ ags completions --shell fish > ~/.config/fish/completions/ags.fish
 - `--defaults` / `-D` (prepend AGS-managed passthrough defaults for the selected harness)
 - `--config <path>`
 - `--add-dir <path>` / `-d <path>` (repeatable, run only; still allowed in lockdown)
+- `--env <NAME=VALUE>` (repeatable, run only; sets an explicit container environment variable, with later assignments winning; do not use for secrets because values appear in the host command line)
 
 ---
 

@@ -221,6 +221,7 @@ fn help_shows_update_image_but_not_deprecated_update_alias() {
     assert!(help.contains("--psp                Enable podman-socket-proxy for Docker/Testcontainers flows (policy-gated)"));
     assert!(help.contains("--psp-keep           Keep PSP-created containers after session exit (debug; requires --psp)"));
     assert!(help.contains("--wayland-compositor-passthrough"));
+    assert!(help.contains("--env <NAME=VALUE>"));
     assert!(!help.contains("\n     \x20 update         Rebuild container image"));
 }
 
@@ -295,6 +296,52 @@ fn parses_run_add_dir_flags() {
 fn run_add_dir_requires_value() {
     let err = parse_args(args(&["ags", "--agent", "pi", "-d"])).expect_err("expected parse error");
     assert_eq!(err, CliError::MissingMountPathValue);
+}
+
+#[test]
+fn parses_repeatable_run_env_flags() {
+    let cmd = parse_args(args(&[
+        "ags",
+        "--agent",
+        "pi",
+        "--env",
+        "BROWSER_URL=http://127.0.0.1:9222",
+        "--env=EMPTY=",
+        "--env",
+        "TOKEN=value=with=equals",
+    ]))
+    .unwrap();
+
+    match cmd {
+        Command::Run(opts) => assert_eq!(
+            opts.env,
+            vec![
+                ("BROWSER_URL".to_owned(), "http://127.0.0.1:9222".to_owned()),
+                ("EMPTY".to_owned(), String::new()),
+                ("TOKEN".to_owned(), "value=with=equals".to_owned()),
+            ]
+        ),
+        _ => panic!("expected Run command"),
+    }
+}
+
+#[test]
+fn run_env_rejects_missing_or_invalid_assignments() {
+    for flag in ["--env", "--env="] {
+        let err = parse_args(args(&["ags", "--agent", "pi", flag]))
+            .expect_err("expected missing env assignment");
+        assert_eq!(err, CliError::MissingEnvValue);
+    }
+
+    for assignment in ["NO_EQUALS", "=value", "9INVALID=value", "BAD-NAME=value"] {
+        let err = parse_args(args(&["ags", "--agent", "pi", "--env", assignment]))
+            .expect_err("expected invalid env assignment");
+        assert_eq!(err, CliError::InvalidEnvAssignment(assignment.to_owned()));
+    }
+
+    let err = parse_args(args(&["ags", "--agent", "pi", "--env", "AGS_LOCKDOWN=0"]))
+        .expect_err("expected reserved env name");
+    assert_eq!(err, CliError::ReservedEnvName("AGS_LOCKDOWN".to_owned()));
 }
 
 #[test]

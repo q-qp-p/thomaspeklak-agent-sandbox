@@ -8,7 +8,7 @@ This document explains what each `ags` command does and what side effects to exp
 
 ```bash
 ags [command]
-ags --agent <pi|claude|codex|gemini|opencode|shell> [--browser] [--tmux] [--stop-when-done] [--psp] [--psp-keep] [--yolo] [--root] [--lockdown] [--wayland-compositor-passthrough] [--defaults|-D] [--config PATH] [--add-dir PATH ...] -- [agent args...]
+ags --agent <pi|claude|codex|gemini|opencode|shell> [--browser] [--tmux] [--stop-when-done] [--psp] [--psp-keep] [--yolo] [--root] [--lockdown] [--wayland-compositor-passthrough] [--defaults|-D] [--config PATH] [--add-dir PATH ...] [--env NAME=VALUE ...] -- [agent args...]
 ```
 
 Subcommands:
@@ -39,6 +39,7 @@ ags --agent pi --tmux
 ags --agent pi --psp
 ags --agent claude --lockdown
 ags --agent claude -d ~/code -d ~/Downloads
+ags --agent pi --env BROWSER_URL=http://127.0.0.1:9222
 ```
 
 ### What happens on run
@@ -64,6 +65,7 @@ ags --agent claude -d ~/code -d ~/Downloads
 - Args after `--` are passed directly to agent CLI.
 - `--defaults` / `-D` prepends AGS-managed default passthrough args for the selected agent harness. Today that means Claude gets `--strict-mcp-config --dangerously-skip-permissions`, Gemini gets `--yolo`, and other agents currently add nothing.
 - `--add-dir <path>` / `-d <path>` adds an extra same-path directory mount for the current run only; repeat it to add multiple directories.
+- `--env <NAME=VALUE>` sets a container environment variable for the current run; repeat it to set multiple values. Names use shell identifier syntax, the internal `AGS_` prefix is reserved, values may be empty or contain `=`, and a later assignment to the same name wins. Explicit values override AGS-managed defaults. Because values appear in the host command line, use the secret transports instead for credentials.
 - `--yolo` disables AGS-managed Pi/Claude guard integrations for that run. For Pi, the AGS guard extension sees `AGS_GUARD_YOLO=1` and becomes a no-op; for Claude, AGS omits its PreToolUse guard hook wiring.
 - `--lockdown` minimizes host exposure for the current run. It disables configured secrets and passthrough env, SSH agent wiring, sandbox git config, generic `[[mount]]` entries, `[[tool]]`-derived mounts/secrets, host bridges/sidecars (including config-enabled host UI for that run), and direct mounting of the selected agent home. Instead AGS stages a sanitized ephemeral home/runtime for the selected agent and discards prior/current session history artifacts when the run exits.
 - In lockdown mode, `--add-dir` still works, network access stays enabled, and exact workspace/external git metadata mounts still work as usual.

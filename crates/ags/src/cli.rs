@@ -71,6 +71,7 @@ pub struct RunOptions {
     pub stop_when_done: bool,
     pub config_path: Option<PathBuf>,
     pub add_dirs: Vec<PathBuf>,
+    pub env: Vec<(String, String)>,
     pub op_secret_sets: Vec<String>,
     pub passthrough_args: Vec<String>,
 }
@@ -155,11 +156,14 @@ pub enum CliError {
     MissingAgent,
     MissingAgentValue,
     MissingConfigValue,
+    MissingEnvValue,
     MissingOpSecretSetValue,
     MissingShellValue,
     MissingAliasModeValue,
     MissingMountPathValue,
     InvalidAgent(String),
+    InvalidEnvAssignment(String),
+    ReservedEnvName(String),
     InvalidShell(String),
     InvalidAliasMode(String),
     UnexpectedFlag(String),
@@ -175,11 +179,22 @@ impl fmt::Display for CliError {
             ),
             Self::MissingAgentValue => f.write_str("missing value for --agent"),
             Self::MissingConfigValue => f.write_str("missing value for --config"),
+            Self::MissingEnvValue => f.write_str("missing value for --env (expected NAME=VALUE)"),
             Self::MissingOpSecretSetValue => f.write_str("missing value for --op-secret-set / -1"),
             Self::MissingShellValue => f.write_str("missing value for --shell"),
             Self::MissingAliasModeValue => f.write_str("missing value for --mode"),
             Self::MissingMountPathValue => f.write_str("missing value for --add-dir / -d"),
             Self::InvalidAgent(agent) => write!(f, "invalid agent '{agent}'"),
+            Self::InvalidEnvAssignment(value) => write!(
+                f,
+                "invalid environment assignment '{value}' (expected NAME=VALUE)"
+            ),
+            Self::ReservedEnvName(name) => {
+                write!(
+                    f,
+                    "environment variable '{name}' uses the reserved AGS_ prefix"
+                )
+            }
             Self::InvalidShell(shell) => {
                 write!(f, "invalid shell '{shell}' (expected fish|zsh|bash)")
             }
@@ -273,6 +288,7 @@ where
         stop_when_done: state.stop_when_done,
         config_path: state.config_path,
         add_dirs: state.add_dirs,
+        env: state.env,
         op_secret_sets: state.op_secret_sets,
         passthrough_args,
     }))
@@ -293,6 +309,7 @@ struct RunParseState {
     use_defaults: bool,
     config_path: Option<PathBuf>,
     add_dirs: Vec<PathBuf>,
+    env: Vec<(String, String)>,
     op_secret_sets: Vec<String>,
 }
 
@@ -389,6 +406,20 @@ fn parse_run_arg<I: Iterator<Item = String>>(
         return Ok(());
     }
 
+    if arg == "--env" {
+        let raw = iter.next().ok_or(CliError::MissingEnvValue)?;
+        state.env.push(parse_env_assignment(&raw)?);
+        return Ok(());
+    }
+
+    if let Some(raw) = arg.strip_prefix("--env=") {
+        if raw.is_empty() {
+            return Err(CliError::MissingEnvValue);
+        }
+        state.env.push(parse_env_assignment(raw)?);
+        return Ok(());
+    }
+
     if arg == "--op-secret-set" || arg == "-1" {
         let raw = iter.next().ok_or(CliError::MissingOpSecretSetValue)?;
         state.op_secret_sets.push(raw);
@@ -416,6 +447,24 @@ fn parse_run_arg<I: Iterator<Item = String>>(
     }
 
     Err(CliError::UnexpectedPositional(arg.to_owned()))
+}
+
+fn parse_env_assignment(raw: &str) -> Result<(String, String), CliError> {
+    let (name, value) = raw
+        .split_once('=')
+        .ok_or_else(|| CliError::InvalidEnvAssignment(raw.to_owned()))?;
+    let mut chars = name.chars();
+    let valid_name = chars
+        .next()
+        .is_some_and(|first| first == '_' || first.is_ascii_alphabetic())
+        && chars.all(|ch| ch == '_' || ch.is_ascii_alphanumeric());
+    if !valid_name {
+        return Err(CliError::InvalidEnvAssignment(raw.to_owned()));
+    }
+    if name.starts_with("AGS_") {
+        return Err(CliError::ReservedEnvName(name.to_owned()));
+    }
+    Ok((name.to_owned(), value.to_owned()))
 }
 
 pub fn help_text() -> &'static str {

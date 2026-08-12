@@ -307,6 +307,7 @@ pub fn run_agent(opts: RunOptions) -> ExitCode {
                 .map(|s| s.extra_mounts.as_slice())
                 .unwrap_or(&[]),
             extra_mount_dirs: &opts.add_dirs,
+            env: &opts.env,
             stop_when_done: opts.stop_when_done,
             root_mode: opts.root,
             wayland_passthrough: opts.wayland_compositor_passthrough

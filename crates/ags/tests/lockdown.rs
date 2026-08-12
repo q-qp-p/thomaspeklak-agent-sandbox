@@ -104,6 +104,7 @@ fn run_opts(agent: Agent) -> RunOptions {
         stop_when_done: false,
         config_path: None,
         add_dirs: Vec::new(),
+        env: Vec::new(),
         op_secret_sets: Vec::new(),
         passthrough_args: Vec::new(),
     }
@@ -131,6 +132,7 @@ fn lockdown_options<'a>(
         psp_session_id: None,
         extra_mounts,
         extra_mount_dirs,
+        env: &[],
         stop_when_done: false,
         root_mode: false,
         wayland_passthrough: false,
